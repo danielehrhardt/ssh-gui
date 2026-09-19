@@ -10,7 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import { Check, Copy, Loader2 } from "lucide-react";
-import { api } from "../lib/api";
+import { api, errorMessage } from "../lib/api";
+import { useToast } from "./Toasts";
 
 export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(" ");
@@ -348,16 +349,24 @@ export function TextInput({
 
 /* ── Copy affordance ──────────────────────────────────────────────────── */
 
-/** Copies via the API and reports a local "Copied" state for 1.4s. */
-export function useCopy(): [copied: boolean, copy: (text: string) => Promise<void>] {
+/** Copies via the API and reports a local "Copied" state for 1.4s. `copy` resolves to whether it worked. */
+export function useCopy(): [copied: boolean, copy: (text: string) => Promise<boolean>] {
   const [copied, setCopied] = useState(false);
+  const toast = useToast();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
   const copy = async (text: string) => {
-    await api.copyText(text);
+    try {
+      await api.copyText(text);
+    } catch (e) {
+      // Never show "Copied" for a copy that did not happen.
+      toast.error("Could not copy to the clipboard", errorMessage(e));
+      return false;
+    }
     setCopied(true);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setCopied(false), 1400);
+    return true;
   };
   return [copied, copy];
 }
@@ -383,8 +392,7 @@ export function CopyButton({
 }) {
   const [copied, copy] = useCopy();
   const handle = async () => {
-    await copy(text);
-    onCopied?.();
+    if (await copy(text)) onCopied?.();
   };
   if (iconOnly) {
     return (

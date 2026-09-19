@@ -5,6 +5,7 @@ import { Badge, Button, cx, Field, IconButton, TextInput } from "./ui";
 import { validateName } from "../lib/keyname";
 import { algoMeta } from "../lib/format";
 import type { GenerateOptions } from "../lib/types";
+import { errorMessage } from "../lib/api";
 
 type Algo = "ed25519" | "rsa" | "ecdsa";
 
@@ -98,7 +99,7 @@ export function GenerateDialog({
         passphrase: passphrase.length > 0 ? passphrase : null,
       });
     } catch (e) {
-      setFailure(e instanceof Error ? e.message : String(e));
+      setFailure(errorMessage(e));
       setBusy(false);
     }
   };
@@ -110,6 +111,7 @@ export function GenerateDialog({
       title="Generate a new key"
       description="A private key and its .pub companion are written to your ssh directory."
       onClose={onClose}
+      dismissable={!busy}
       onSubmit={submit}
       width="max-w-[500px]"
       footer={

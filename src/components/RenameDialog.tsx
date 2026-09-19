@@ -4,6 +4,7 @@ import { Dialog } from "./Dialog";
 import { Button, Field, TextInput } from "./ui";
 import { validateName } from "../lib/keyname";
 import type { KeyInfo } from "../lib/types";
+import { errorMessage } from "../lib/api";
 
 export function RenameDialog({
   info,
@@ -35,7 +36,7 @@ export function RenameDialog({
     try {
       await onRename(info.name, name.trim(), updateConfig);
     } catch (e) {
-      setFailure(e instanceof Error ? e.message : String(e));
+      setFailure(errorMessage(e));
       setBusy(false);
     }
   };
@@ -45,6 +46,7 @@ export function RenameDialog({
       title="Rename key"
       description="Both the private key and its .pub file are renamed together."
       onClose={onClose}
+      dismissable={!busy}
       onSubmit={submit}
       width="max-w-[460px]"
       footer={

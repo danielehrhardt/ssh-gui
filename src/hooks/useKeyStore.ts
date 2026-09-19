@@ -63,28 +63,60 @@ export function useKeyStore(toast: ToastApi): KeyStore {
     setKeys((all) => all.map((k) => (k.name === name ? next : k)));
   }, []);
 
+  // Responses can arrive out of order (window-focus refreshes, slow ssh-add). Each loader stamps
+  // its request; only the newest stamp may write state. Mutations bump the list stamp too, so a
+  // listing that was read from disk before a delete/generate can never overwrite its result.
+  const listStamp = useRef(0);
+  const agentStamp = useRef(0);
+  const activeRefreshes = useRef(0);
+
+  const invalidateList = useCallback(() => {
+    listStamp.current += 1;
+  }, []);
+
   const loadAgent = useCallback(async () => {
+    const mine = ++agentStamp.current;
+    let next: AgentStatus;
     try {
-      setAgent(await api.agentStatus());
+      next = await api.agentStatus();
     } catch (e) {
-      setAgent({ available: false, message: errorMessage(e), keys: [] });
+      next = { available: false, message: errorMessage(e), keys: [] };
     }
+    if (agentStamp.current === mine) setAgent(next);
   }, []);
 
   const refresh = useCallback(async () => {
+    const mine = ++listStamp.current;
+    activeRefreshes.current += 1;
     setRefreshing(true);
     try {
       const next = await api.listKeys();
-      setKeys(next);
-      setLoadError(null);
+      if (listStamp.current === mine) {
+        setKeys(next);
+        setLoadError(null);
+      }
     } catch (e) {
-      setLoadError(errorMessage(e));
+      if (listStamp.current === mine) setLoadError(errorMessage(e));
     } finally {
-      setRefreshing(false);
+      activeRefreshes.current -= 1;
+      setRefreshing(activeRefreshes.current > 0);
       setLoading(false);
     }
     void loadAgent();
   }, [loadAgent]);
+
+  /** Runs a mutation so that no listing started before it finished can overwrite its result. */
+  const mutate = useCallback(
+    async <T,>(work: () => Promise<T>): Promise<T> => {
+      invalidateList();
+      try {
+        return await work();
+      } finally {
+        invalidateList();
+      }
+    },
+    [invalidateList],
+  );
 
   useEffect(() => {
     void refresh();
@@ -97,10 +129,9 @@ export function useKeyStore(toast: ToastApi): KeyStore {
       const id = token(key.name, "enabled");
       if (inFlight.current.has(id)) return;
       mark(id, true);
-      const before = key;
       patch(key.name, { enabled, inAgent: enabled ? key.inAgent : false });
       try {
-        const updated = await api.setKeyEnabled(key.name, enabled);
+        const updated = await mutate(() => api.setKeyEnabled(key.name, enabled));
         replace(key.name, updated);
         toast.success(
           enabled ? `${key.name} enabled` : `${key.name} disabled`,
@@ -110,13 +141,15 @@ export function useKeyStore(toast: ToastApi): KeyStore {
         );
         void loadAgent();
       } catch (e) {
-        patch(key.name, { enabled: before.enabled, inAgent: before.inAgent });
+        // Undo only our own guess, then ask the disk: a snapshot from before the call may be stale.
+        patch(key.name, { enabled: !enabled });
         toast.error(`Could not ${enabled ? "enable" : "disable"} ${key.name}`, errorMessage(e));
+        void refresh();
       } finally {
         mark(id, false);
       }
     },
-    [loadAgent, mark, patch, replace, toast],
+    [loadAgent, mark, mutate, patch, refresh, replace, toast],
   );
 
   const addToAgent = useCallback(
@@ -128,7 +161,7 @@ export function useKeyStore(toast: ToastApi): KeyStore {
       mark(id, true);
       patch(name, { inAgent: true });
       try {
-        await api.agentAdd(name, passphrase);
+        await mutate(() => api.agentAdd(name, passphrase));
         toast.success(`${name} added to ssh-agent`);
         void loadAgent();
         return { ok: true, needsPassphrase: false, message: "" };
@@ -139,12 +172,12 @@ export function useKeyStore(toast: ToastApi): KeyStore {
         if (!needsPassphrase && passphrase === undefined) {
           toast.error(`Could not add ${name} to the agent`, message);
         }
-        return { ok: false, needsPassphrase, message };
+        return { ok: false, needsPassphrase, message: message || "ssh-add failed." };
       } finally {
         mark(id, false);
       }
     },
-    [loadAgent, mark, patch, toast],
+    [loadAgent, mark, mutate, patch, toast],
   );
 
   const removeFromAgent = useCallback(
@@ -154,17 +187,18 @@ export function useKeyStore(toast: ToastApi): KeyStore {
       mark(id, true);
       patch(name, { inAgent: false });
       try {
-        await api.agentRemove(name);
+        await mutate(() => api.agentRemove(name));
         toast.success(`${name} removed from ssh-agent`);
         void loadAgent();
       } catch (e) {
         patch(name, { inAgent: true });
         toast.error(`Could not remove ${name} from the agent`, errorMessage(e));
+        void refresh();
       } finally {
         mark(id, false);
       }
     },
-    [loadAgent, mark, patch, toast],
+    [loadAgent, mark, mutate, patch, refresh, toast],
   );
 
   /* ── Plain mutations ────────────────────────────────────────────────── */
@@ -172,9 +206,10 @@ export function useKeyStore(toast: ToastApi): KeyStore {
   const saveComment = useCallback(
     async (name: string, comment: string) => {
       const id = token(name, "comment");
+      if (inFlight.current.has(id)) return false;
       mark(id, true);
       try {
-        const updated = await api.setComment(name, comment);
+        const updated = await mutate(() => api.setComment(name, comment));
         replace(name, updated);
         toast.success("Comment updated");
         return true;
@@ -185,35 +220,45 @@ export function useKeyStore(toast: ToastApi): KeyStore {
         mark(id, false);
       }
     },
-    [mark, replace, toast],
+    [mark, mutate, replace, toast],
   );
 
   const generate = useCallback(
     async (options: GenerateOptions) => {
-      const key = await api.generateKey(options);
-      setKeys((all) => [...all, key]);
+      const key = await mutate(() => api.generateKey(options));
+      setKeys((all) => [...all.filter((k) => k.name !== key.name), key]);
       void loadAgent();
       return key;
     },
-    [loadAgent],
+    [loadAgent, mutate],
   );
 
-  const importKey = useCallback(async (sourcePath: string, name: string) => {
-    const key = await api.importKey(sourcePath, name);
-    setKeys((all) => [...all, key]);
-    return key;
-  }, []);
+  const importKey = useCallback(
+    async (sourcePath: string, name: string) => {
+      const key = await mutate(() => api.importKey(sourcePath, name));
+      setKeys((all) => [...all.filter((k) => k.name !== key.name), key]);
+      return key;
+    },
+    [mutate],
+  );
 
-  const rename = useCallback(async (name: string, newName: string, updateConfig: boolean) => {
-    const outcome = await api.renameKey(name, newName, updateConfig);
-    setKeys((all) => all.map((k) => (k.name === name ? outcome.key : k)));
-    return outcome;
-  }, []);
+  const rename = useCallback(
+    async (name: string, newName: string, updateConfig: boolean) => {
+      const outcome = await mutate(() => api.renameKey(name, newName, updateConfig));
+      setKeys((all) => all.map((k) => (k.name === name ? outcome.key : k)));
+      return outcome;
+    },
+    [mutate],
+  );
 
-  const remove = useCallback(async (name: string, permanent: boolean) => {
-    await api.deleteKey(name, permanent);
-    setKeys((all) => all.filter((k) => k.name !== name));
-  }, []);
+  const remove = useCallback(
+    async (name: string, permanent: boolean) => {
+      await mutate(() => api.deleteKey(name, permanent));
+      setKeys((all) => all.filter((k) => k.name !== name));
+      void loadAgent();
+    },
+    [loadAgent, mutate],
+  );
 
   const reveal = useCallback(
     async (name: string) => {

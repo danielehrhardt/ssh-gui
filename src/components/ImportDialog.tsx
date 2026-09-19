@@ -3,6 +3,7 @@ import { FileDown } from "lucide-react";
 import { Dialog } from "./Dialog";
 import { Button, Field, TextInput } from "./ui";
 import { suggestNameFromPath, validateName } from "../lib/keyname";
+import { errorMessage } from "../lib/api";
 
 export function ImportDialog({
   sourcePath,
@@ -28,7 +29,7 @@ export function ImportDialog({
     try {
       await onImport(sourcePath, name.trim());
     } catch (e) {
-      setFailure(e instanceof Error ? e.message : String(e));
+      setFailure(errorMessage(e));
       setBusy(false);
     }
   };
@@ -38,6 +39,7 @@ export function ImportDialog({
       title="Import a key"
       description="The file is copied into your ssh directory; the original stays where it is."
       onClose={onClose}
+      dismissable={!busy}
       onSubmit={submit}
       footer={
         <>

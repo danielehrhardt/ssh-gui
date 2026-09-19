@@ -3,6 +3,7 @@ import { AlertTriangle, Server, Trash2 } from "lucide-react";
 import { Dialog } from "./Dialog";
 import { Button } from "./ui";
 import type { KeyInfo } from "../lib/types";
+import { errorMessage } from "../lib/api";
 
 export function DeleteDialog({
   info,
@@ -24,7 +25,7 @@ export function DeleteDialog({
     try {
       await onDelete(info.name, permanent);
     } catch (e) {
-      setFailure(e instanceof Error ? e.message : String(e));
+      setFailure(errorMessage(e));
       setBusy(null);
     }
   };
@@ -35,6 +36,7 @@ export function DeleteDialog({
       description="Both the private key and its .pub file are removed from your ssh directory."
       tone="danger"
       onClose={onClose}
+      dismissable={busy === null}
       onSubmit={() => void run(false)}
       width="max-w-[460px]"
       footer={
@@ -44,7 +46,7 @@ export function DeleteDialog({
               {failure}
             </p>
           )}
-          <Button onClick={onClose} disabled={busy !== null}>
+          <Button onClick={onClose} disabled={busy !== null} data-autofocus>
             Cancel
           </Button>
           <Button
@@ -52,7 +54,6 @@ export function DeleteDialog({
             variant="danger"
             busy={busy === "trash"}
             disabled={busy === "permanent"}
-            data-autofocus
           >
             <Trash2 className="size-3.5" />
             Move to Trash

@@ -24,13 +24,12 @@ export function PassphraseDialog({
     setBusy(true);
     setError(null);
     const failure = await onSubmit(passphrase);
-    if (failure) {
-      setError(failure);
-      setPassphrase("");
-      setBusy(false);
-      // The field was disabled while we waited; put the cursor back in it.
-      requestAnimationFrame(() => input.current?.focus());
-    }
+    if (failure === null) return; // loaded — the dialog is closing
+    setError(failure || "Could not add the key to the agent.");
+    setPassphrase("");
+    setBusy(false);
+    // The field was disabled while we waited; put the cursor back in it.
+    requestAnimationFrame(() => input.current?.focus());
   };
 
   return (
@@ -44,6 +43,7 @@ export function PassphraseDialog({
       }
       onClose={onClose}
       onSubmit={submit}
+      dismissable={!busy}
       width="max-w-[400px]"
       footer={
         <>

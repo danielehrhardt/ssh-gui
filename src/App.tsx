@@ -136,8 +136,13 @@ function Workspace() {
 
   const copySelectedPublicKey = useCallback(async () => {
     if (!selectedKey?.publicKey) return;
-    await api.copyText(selectedKey.publicKey);
-    toast.success(`Public key of ${selectedKey.name} copied`);
+    try {
+      await api.copyText(selectedKey.publicKey);
+      toast.success(`Public key of ${selectedKey.name} copied`);
+    } catch (e) {
+      // Saying nothing would let the user paste whatever was on the clipboard before.
+      toast.error("Could not copy the public key", errorMessage(e));
+    }
   }, [selectedKey, toast]);
 
   const move = useCallback(
@@ -170,7 +175,7 @@ function Workspace() {
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
         target?.isContentEditable === true;
-      const mod = e.metaKey || e.ctrlKey;
+      const mod = (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey;
 
       if (e.key === "Escape") {
         if (modalOpen) return; // the dialog handles its own Escape
@@ -215,13 +220,14 @@ function Workspace() {
         void copySelectedPublicKey();
         return;
       }
+      if (typing) return;
+
+      // ⌘⌫ in a text field means "delete to start of line" — it must never reach this.
       if (mod && e.key === "Backspace" && selectedKey) {
         e.preventDefault();
         setModal({ kind: "delete", name: selectedKey.name });
         return;
       }
-
-      if (typing) return;
 
       if (e.key === "/") {
         e.preventDefault();
@@ -238,7 +244,9 @@ function Workspace() {
         move(-1);
         return;
       }
-      if ((e.key === "Delete" || e.key === "Backspace") && selectedKey) {
+      // Plain Backspace is too easy to hit by accident; only Delete or ⌘⌫ (above) ask to delete.
+      const bare = !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey;
+      if (e.key === "Delete" && bare && selectedKey) {
         e.preventDefault();
         setModal({ kind: "delete", name: selectedKey.name });
       }

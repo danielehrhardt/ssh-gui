@@ -19,6 +19,7 @@ export function Dialog({
   footer,
   width = "max-w-[440px]",
   tone = "default",
+  dismissable = true,
 }: {
   title: string;
   description?: ReactNode;
@@ -28,6 +29,8 @@ export function Dialog({
   footer: ReactNode;
   width?: string;
   tone?: "default" | "danger";
+  /** false while work is in flight: closing then would hide its outcome from the user. */
+  dismissable?: boolean;
 }) {
   const panel = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -48,7 +51,7 @@ export function Dialog({
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       e.stopPropagation();
-      onClose();
+      if (dismissable) onClose();
       return;
     }
     if (e.key !== "Tab" || !panel.current) return;
@@ -71,7 +74,7 @@ export function Dialog({
     <div
       className="anim-overlay fixed inset-0 z-40 flex items-center justify-center bg-overlay p-4"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget && dismissable) onClose();
       }}
     >
       <div
@@ -105,7 +108,13 @@ export function Dialog({
               </p>
             )}
           </div>
-          <IconButton label="Close" size="sm" onClick={onClose} className="-mr-1">
+          <IconButton
+            label="Close"
+            size="sm"
+            onClick={onClose}
+            disabled={!dismissable}
+            className="-mr-1"
+          >
             <X className="size-3.5" />
           </IconButton>
         </header>
