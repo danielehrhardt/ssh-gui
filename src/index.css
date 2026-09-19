@@ -1,0 +1,391 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────────────────────────
+   sshkm design tokens
+   Light is the base definition; dark is redefined for the media query and
+   for the explicit [data-theme="dark"] override so the manual toggle wins
+   in both directions.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  color-scheme: light;
+
+  /* Ground & surfaces */
+  --bg: #f4f4f6;
+  --surface: #ffffff;
+  --surface-2: #fafafb;
+  --sunken: #eeeef1;
+  --overlay: rgb(24 24 28 / 0.32);
+
+  /* Hairlines */
+  --line: #e3e3e8;
+  --line-strong: #cfcfd7;
+
+  /* Type */
+  --text: #16161a;
+  --muted: #5b5b67;
+  --faint: #8b8b98;
+
+  /* Accent — used sparingly: primary action, selection, focus */
+  --accent: #4f46c9;
+  --accent-hover: #423ab0;
+  --accent-fg: #ffffff;
+  --accent-soft: rgb(79 70 201 / 0.09);
+  --accent-line: rgb(79 70 201 / 0.32);
+
+  /* Semantics */
+  --positive: #0f7a52;
+  --positive-soft: rgb(15 122 82 / 0.1);
+  --warning: #9a5b04;
+  --warning-soft: rgb(154 91 4 / 0.11);
+  --danger: #c02640;
+  --danger-hover: #a51e34;
+  --danger-fg: #ffffff;
+  --danger-soft: rgb(192 38 64 / 0.1);
+
+  /* Algorithm identity */
+  --algo-ed25519: #0f7a52;
+  --algo-rsa: #1d6fb8;
+  --algo-ecdsa: #7b4fc0;
+  --algo-dsa: #9a5b04;
+  --algo-sk: #0b7c86;
+  --algo-unknown: #6d6d7a;
+
+  --shadow-pop:
+    0 1px 2px rgb(16 16 22 / 0.06), 0 8px 24px -8px rgb(16 16 22 / 0.18);
+  --shadow-dialog:
+    0 1px 1px rgb(16 16 22 / 0.08), 0 24px 56px -12px rgb(16 16 22 / 0.34);
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono:
+    ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg: #0c0c0f;
+    --surface: #131317;
+    --surface-2: #17171c;
+    --sunken: #0e0e12;
+    --overlay: rgb(4 4 6 / 0.6);
+
+    --line: #25252c;
+    --line-strong: #34343e;
+
+    --text: #edecf1;
+    --muted: #a0a0ad;
+    --faint: #71717f;
+
+    --accent: #9b9cfb;
+    --accent-hover: #b0b1ff;
+    --accent-fg: #14141c;
+    --accent-soft: rgb(155 156 251 / 0.13);
+    --accent-line: rgb(155 156 251 / 0.4);
+
+    --positive: #45cf93;
+    --positive-soft: rgb(69 207 147 / 0.14);
+    --warning: #eeb548;
+    --warning-soft: rgb(238 181 72 / 0.14);
+    --danger: #fb7185;
+    --danger-hover: #ff8b9c;
+    --danger-fg: #2b0a11;
+    --danger-soft: rgb(251 113 133 / 0.14);
+
+    --algo-ed25519: #45cf93;
+    --algo-rsa: #61b3f5;
+    --algo-ecdsa: #b697f7;
+    --algo-dsa: #eeb548;
+    --algo-sk: #47c8d4;
+    --algo-unknown: #9494a2;
+
+    --shadow-pop: 0 1px 2px rgb(0 0 0 / 0.5), 0 10px 28px -10px rgb(0 0 0 / 0.7);
+    --shadow-dialog:
+      0 1px 1px rgb(0 0 0 / 0.6), 0 28px 64px -12px rgb(0 0 0 / 0.8);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0c0c0f;
+  --surface: #131317;
+  --surface-2: #17171c;
+  --sunken: #0e0e12;
+  --overlay: rgb(4 4 6 / 0.6);
+
+  --line: #25252c;
+  --line-strong: #34343e;
+
+  --text: #edecf1;
+  --muted: #a0a0ad;
+  --faint: #71717f;
+
+  --accent: #9b9cfb;
+  --accent-hover: #b0b1ff;
+  --accent-fg: #14141c;
+  --accent-soft: rgb(155 156 251 / 0.13);
+  --accent-line: rgb(155 156 251 / 0.4);
+
+  --positive: #45cf93;
+  --positive-soft: rgb(69 207 147 / 0.14);
+  --warning: #eeb548;
+  --warning-soft: rgb(238 181 72 / 0.14);
+  --danger: #fb7185;
+  --danger-hover: #ff8b9c;
+  --danger-fg: #2b0a11;
+  --danger-soft: rgb(251 113 133 / 0.14);
+
+  --algo-ed25519: #45cf93;
+  --algo-rsa: #61b3f5;
+  --algo-ecdsa: #b697f7;
+  --algo-dsa: #eeb548;
+  --algo-sk: #47c8d4;
+  --algo-unknown: #9494a2;
+
+  --shadow-pop: 0 1px 2px rgb(0 0 0 / 0.5), 0 10px 28px -10px rgb(0 0 0 / 0.7);
+  --shadow-dialog:
+    0 1px 1px rgb(0 0 0 / 0.6), 0 28px 64px -12px rgb(0 0 0 / 0.8);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-sunken: var(--sunken);
+  --color-overlay: var(--overlay);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
+
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-soft: var(--danger-soft);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --shadow-pop: var(--shadow-pop);
+  --shadow-dialog: var(--shadow-dialog);
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────── */
+
+@layer base {
+
+  * {
+    border-color: var(--line);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  html {
+    overflow: hidden;
+  }
+
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-synthesis-weight: none;
+    /* Desktop chrome: text is not selectable unless opted in. */
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: default;
+  }
+
+  button,
+  [role="switch"],
+  [role="tab"] {
+    cursor: default;
+    font: inherit;
+    color: inherit;
+  }
+
+  input,
+  textarea {
+    font: inherit;
+    color: inherit;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  /* Key material, paths, fingerprints — always selectable. */
+  .selectable {
+    user-select: text;
+    -webkit-user-select: text;
+    cursor: text;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+    color: var(--text);
+  }
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.label-xs {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* ── Scrollbars ───────────────────────────────────────────────────────── */
+
+.scroller {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.scroller::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroller::-webkit-scrollbar-thumb {
+  background-clip: content-box;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-color: var(--line-strong);
+}
+
+.scroller::-webkit-scrollbar-thumb:hover {
+  background-color: var(--faint);
+}
+
+.scroller::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ── Motion ───────────────────────────────────────────────────────────── */
+
+@keyframes sshkm-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sshkm-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sshkm-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sshkm-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sshkm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.anim-overlay {
+  animation: sshkm-overlay-in 160ms ease-out;
+}
+
+.anim-dialog {
+  animation: sshkm-dialog-in 190ms cubic-bezier(0.16, 0.84, 0.44, 1);
+}
+
+.anim-toast {
+  animation: sshkm-toast-in 200ms cubic-bezier(0.16, 0.84, 0.44, 1);
+}
+
+.anim-panel {
+  animation: sshkm-panel-in 180ms cubic-bezier(0.16, 0.84, 0.44, 1);
+}
+
+.anim-spin {
+  animation: sshkm-spin 900ms linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .anim-spin {
+    animation-duration: 900ms !important;
+    animation-iteration-count: infinite !important;
+  }
+}

@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = ["crates/sshkm-core", "crates/sshkm-cli", "src-tauri"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/danielehrhardt/ssh-gui"
+authors = ["Daniel Ehrhardt"]
+
+[workspace.dependencies]
+sshkm-core = { path = "crates/sshkm-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# RSA key generation is painfully slow without optimisations.
+[profile.dev.package.num-bigint-dig]
+opt-level = 3
+[profile.dev.package.rsa]
+opt-level = 3
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+opt-level = "s"

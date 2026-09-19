@@ -1,0 +1,8 @@
+node_modules
+dist
+target
+.omc
+.DS_Store
+*.log
+src-tauri/gen
+src-tauri/binaries
